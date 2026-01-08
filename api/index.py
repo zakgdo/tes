@@ -9,9 +9,9 @@ app = Flask(__name__)
 
 # ---------- 内存数据库（简单演示用）----------
 tours_db = [
-    {"id": 1, "date": "2024-12-25", "time": "08:00", "destination": "北京故宫一日游", "max_seats": 6, "booked": 2},
-    {"id": 2, "date": "2024-12-26", "time": "09:00", "destination": "八达岭长城半日游", "max_seats": 6, "booked": 4},
-    {"id": 3, "date": "2024-12-27", "time": "10:00", "destination": "颐和园休闲游", "max_seats": 6, "booked": 0}
+    {"id": 1, "date": "2026-1-8", "time": "08:00", "destination": "第一班", "max_seats": 6, "booked": 0},
+    {"id": 2, "date": "2026-1-8", "time": "09:00", "destination": "第二班", "max_seats": 6, "booked": 0},
+    {"id": 3, "date": "2026-1-8", "time": "10:00", "destination": "第三班", "max_seats": 6, "booked": 0}
 ]
 bookings_db = []
 
