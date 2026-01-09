@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 
-{% block title %}已发车班次 - 车位预订系统{% endblock %}
+{% block title %}已发车班次 - 订车助手{% endblock %}
 
 {% block content %}
 <div style="max-width: 1200px; margin: 0 auto;">
@@ -27,7 +27,7 @@
                             <i class="fas fa-list"></i> 查看历史预订
                         </button>
                         <div id="booking-details-{{ tour['id'] }}" class="booking-details" style="display: none; margin-top: 15px;">
-                            <!-- 预订详情将通过JavaScript动态加载 -->
+                    
                         </div>
                     </div>
                 </div>
@@ -38,8 +38,9 @@
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 30px;">
             <h3><i class="fas fa-info-circle"></i> 说明</h3>
-            <p style="color: #666; margin-top: 10px;">已发车班次会在此保留一周，供查看历史记录和统计数据。超过一周的班次将自动从系统中移除。</p>
+            <p style="color: #666; margin-top: 10px;">已发车班次会在此保留一周，供查看历史记录和统计数据。</p>
         </div>
     </div>
 </div>
 {% endblock %}
+
