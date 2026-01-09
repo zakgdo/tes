@@ -12,7 +12,7 @@
         {% if valid_tours %}
             {% for tour in valid_tours %}
                 {% set available = tour['max_seats'] - tour['booked'] %}
-                {% set departed = tour['date'] ~ ' ' ~ tour['time'] | is_tour_departed %}
+                {% set departed = is_tour_departed(tour['date'], tour['time']) %}
                 {% set status_info = '已发车' if departed else ('已满员' if available == 0 else '可预订(' ~ available ~ '空位)') %}
                 {% set status_class = 'status-departed' if departed else ('status-full' if available == 0 else 'status-available') %}
                 
@@ -41,3 +41,4 @@
 </div>
 
 {% endblock %}
+
