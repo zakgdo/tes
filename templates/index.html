@@ -35,7 +35,7 @@
     {% for tour in valid_tours %}
         {% set available = tour['max_seats'] - tour['booked'] %}
         {% set percent = (tour['booked'] / tour['max_seats'] * 100)|int if tour['max_seats'] > 0 else 0 %}
-        {% set departed = tour['date'] ~ ' ' ~ tour['time'] | is_tour_departed %}
+        {% set departed = is_tour_departed(tour['date'], tour['time']) %}
         
         {% if departed %}
             {% set status_class = 'status-departed' %}
@@ -112,3 +112,4 @@ function toggleBookingDetails(tourId) {
 </script>
 
 {% endblock %}
+
