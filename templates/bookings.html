@@ -20,7 +20,7 @@
         {% if tour_booking_counts %}
             {% for item in tour_booking_counts %}
                 {% set tour = item.tour %}
-                {% set departed = tour['date'] ~ ' ' ~ tour['time'] | is_tour_departed %}
+                {% set departed = is_tour_departed(tour['date'], tour['time']) %}
                 
                 <div class="card" style="border-left: 6px solid #00b09b; margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
