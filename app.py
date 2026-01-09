@@ -4,69 +4,97 @@ import random
 import string
 from datetime import datetime, timedelta
 import os
-import sqlite3
-from contextlib import closing
 
 app = Flask(__name__)
-# 使用固定密钥而不是随机密钥（重要！）
-app.secret_key = "your-fixed-secret-key-for-vercel-123456"
+app.secret_key = "simple-fixed-key-for-booking-system"
 
-# 数据库文件路径
-DB_FILE = '/tmp/booking_data.db'
+# 使用内存存储（在Vercel的无服务器环境中，每次请求都重新加载数据）
+# 注意：这不会持久化保存数据，重启后会丢失，但至少能正常工作
+class MemoryStorage:
+    def __init__(self):
+        self.tours = []
+        self.bookings = []
+        self.next_tour_id = 1
+        
+    def reset(self):
+        # 重置数据，添加一些示例数据用于测试
+        self.tours = []
+        self.bookings = []
+        self.next_tour_id = 1
+        
+        # 添加一些示例班次
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+        after_tomorrow = (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d')
+        
+        self.tours = [
+            {
+                'id': 1,
+                'date': tomorrow,
+                'time': '08:00',
+                'destination': '上海南站',
+                'vehicle_model': '大巴',
+                'max_seats': 6,
+                'booked': 0
+            },
+            {
+                'id': 2,
+                'date': tomorrow,
+                'time': '14:00',
+                'destination': '虹桥机场',
+                'vehicle_model': '中巴',
+                'max_seats': 4,
+                'booked': 0
+            },
+            {
+                'id': 3,
+                'date': after_tomorrow,
+                'time': '09:30',
+                'destination': '浦东机场',
+                'vehicle_model': '商务车',
+                'max_seats': 3,
+                'booked': 0
+            }
+        ]
+        self.next_tour_id = 4
+        
+    def get_tours(self):
+        if not self.tours:
+            self.reset()
+        return self.tours
+        
+    def get_bookings(self):
+        return self.bookings
+        
+    def add_tour(self, tour_data):
+        tour_id = self.next_tour_id
+        self.next_tour_id += 1
+        
+        tour = {
+            'id': tour_id,
+            'date': tour_data['date'],
+            'time': tour_data['time'],
+            'destination': tour_data['destination'],
+            'vehicle_model': tour_data.get('vehicle_model', '未指定'),
+            'max_seats': tour_data.get('max_seats', 6),
+            'booked': 0
+        }
+        self.tours.append(tour)
+        return tour_id
+        
+    def add_booking(self, booking_data):
+        self.bookings.append(booking_data)
+        # 更新班次的预订人数
+        for tour in self.tours:
+            if tour['id'] == booking_data['tour_id']:
+                tour['booked'] += len(booking_data['seat_numbers'])
+                break
+                
+    def delete_tour(self, tour_id):
+        self.tours = [t for t in self.tours if t['id'] != tour_id]
+        self.bookings = [b for b in self.bookings if b['tour_id'] != tour_id]
 
-# 初始化数据库（确保表存在）
-def init_database():
-    try:
-        with closing(sqlite3.connect(DB_FILE)) as conn:
-            cursor = conn.cursor()
-            
-            # 创建班次表
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS tours (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    date TEXT NOT NULL,
-                    time TEXT NOT NULL,
-                    destination TEXT NOT NULL,
-                    vehicle_model TEXT DEFAULT '未指定',
-                    max_seats INTEGER DEFAULT 6,
-                    booked INTEGER DEFAULT 0
-                )
-            ''')
-            
-            # 创建预订表
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS bookings (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    code TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    phone TEXT NOT NULL,
-                    seat_numbers TEXT NOT NULL,
-                    tour_id INTEGER NOT NULL,
-                    created_at TEXT NOT NULL
-                )
-            ''')
-            
-            conn.commit()
-            print("✅ 数据库初始化成功")
-    except Exception as e:
-        print(f"❌ 数据库初始化失败: {e}")
-
-# 在应用启动时初始化数据库
-init_database()
-
-@app.before_request
-def before_request():
-    """每次请求前确保数据库存在"""
-    try:
-        # 简单检查数据库连接
-        with closing(sqlite3.connect(DB_FILE)) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = cursor.fetchall()
-            if not tables:
-                init_database()
-    except:
-        init_database()
+# 创建全局存储实例
+storage = MemoryStorage()
 
 @app.context_processor
 def utility_processor():
@@ -85,92 +113,6 @@ def utility_processor():
         calculate_available=calculate_available,
         now=datetime.now
     )
-
-# 数据库操作辅助函数
-def get_db_connection():
-    return sqlite3.connect(DB_FILE)
-
-def load_tours():
-    """加载所有班次"""
-    try:
-        with closing(get_db_connection()) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM tours ORDER BY date, time')
-            tours = cursor.fetchall()
-            return [dict(tour) for tour in tours]
-    except Exception as e:
-        print(f"❌ 加载班次失败: {e}")
-        # 如果出错，尝试重新初始化数据库
-        try:
-            init_database()
-        except:
-            pass
-        return []
-
-def load_bookings():
-    """加载所有预订"""
-    try:
-        with closing(get_db_connection()) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM bookings')
-            bookings = cursor.fetchall()
-            return [dict(booking) for booking in bookings]
-    except Exception as e:
-        print(f"❌ 加载预订失败: {e}")
-        return []
-
-def save_tour(tour):
-    """保存班次"""
-    try:
-        with closing(get_db_connection()) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO tours (date, time, destination, vehicle_model, max_seats, booked)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (tour['date'], tour['time'], tour['destination'], 
-                  tour.get('vehicle_model', '未指定'), tour['max_seats'], tour.get('booked', 0)))
-            tour['id'] = cursor.lastrowid
-            conn.commit()
-            return True
-    except Exception as e:
-        print(f"❌ 保存班次失败: {e}")
-        return False
-
-def save_booking(booking):
-    """保存预订"""
-    try:
-        with closing(get_db_connection()) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO bookings (code, name, phone, seat_numbers, tour_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (booking['code'], booking['name'], booking['phone'], 
-                  json.dumps(booking['seat_numbers']), booking['tour_id'], booking['created_at']))
-            
-            cursor.execute('''
-                UPDATE tours SET booked = booked + ? WHERE id = ?
-            ''', (len(booking['seat_numbers']), booking['tour_id']))
-            
-            conn.commit()
-            return True
-    except Exception as e:
-        print(f"❌ 保存预订失败: {e}")
-        return False
-
-def delete_tour(tour_id):
-    """删除班次"""
-    try:
-        with closing(get_db_connection()) as conn:
-            cursor = conn.cursor()
-            cursor.execute('DELETE FROM tours WHERE id = ?', (tour_id,))
-            cursor.execute('DELETE FROM bookings WHERE tour_id = ?', (tour_id,))
-            conn.commit()
-            return True
-    except Exception as e:
-        print(f"❌ 删除班次失败: {e}")
-        return False
 
 def is_tour_departed(tour_date, tour_time):
     try:
@@ -194,10 +136,10 @@ def should_keep_tour(tour_date, tour_time):
         print(f"检查班次保留状态出错: {e}, date={tour_date}, time={tour_time}")
         return True
 
-# 路由部分
+# 路由部分 - 保持和原来完全一样
 @app.route('/')
 def home():
-    tours = load_tours()
+    tours = storage.get_tours()
     
     # 过滤有效班次
     valid_tours = []
@@ -210,7 +152,10 @@ def home():
     
     # 删除过期班次
     for tour in expired_tours:
-        delete_tour(tour['id'])
+        storage.delete_tour(tour['id'])
+    
+    # 重新获取有效班次
+    valid_tours = [t for t in storage.get_tours() if should_keep_tour(t['date'], t['time'])]
     
     # 计算统计数据
     valid_count = len(valid_tours)
@@ -225,14 +170,14 @@ def home():
 
 @app.route('/tours')
 def tours_page():
-    tours = load_tours()
+    tours = storage.get_tours()
     valid_tours = [t for t in tours if should_keep_tour(t['date'], t['time'])]
     return render_template('tours.html', valid_tours=valid_tours)
 
 @app.route('/bookings')
 def bookings_page():
-    tours = load_tours()
-    bookings = load_bookings()
+    tours = storage.get_tours()
+    bookings = storage.get_bookings()
     valid_tours = [t for t in tours if should_keep_tour(t['date'], t['time'])]
     
     tour_booking_counts = []
@@ -244,8 +189,7 @@ def bookings_page():
         if booking_count > 0:
             seat_count = 0
             for b in tour_bookings:
-                seats = json.loads(b.get('seat_numbers', '[]'))
-                seat_count += len(seats)
+                seat_count += len(b.get('seat_numbers', []))
             tour_booking_counts.append({
                 'tour': tour,
                 'booking_count': booking_count,
@@ -260,7 +204,7 @@ def bookings_page():
 
 @app.route('/departed')
 def departed_page():
-    tours = load_tours()
+    tours = storage.get_tours()
     valid_tours = [t for t in tours if should_keep_tour(t['date'], t['time'])]
     
     departed_tours = []
@@ -285,7 +229,7 @@ def departed_page():
 
 @app.route('/book/<int:tour_id>')
 def book_page(tour_id):
-    tours = load_tours()
+    tours = storage.get_tours()
     tour = next((t for t in tours if t['id'] == tour_id), None)
     
     if not tour:
@@ -294,25 +238,27 @@ def book_page(tour_id):
     if is_tour_departed(tour['date'], tour['time']):
         return render_template('error.html', message='该班次已发车，不能预订')
     
-    bookings = load_bookings()
+    # 获取已预订座位
+    bookings = storage.get_bookings()
     taken_seats = []
     for b in bookings:
         if b['tour_id'] == tour_id:
-            seats = json.loads(b.get('seat_numbers', '[]'))
-            taken_seats.extend(seats)
+            taken_seats.extend(b.get('seat_numbers', []))
     
     return render_template('book.html', tour=tour, taken_seats=taken_seats)
 
+# 简化登录逻辑 - 直接检查密码，不依赖session
+ADMIN_PASSWORD = "050522"
+admin_logged_in = False
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
-    ADMIN_PASSWORD = "050522"
+    global admin_logged_in
     
     if request.method == 'POST':
         password = request.form.get('password')
         if password == ADMIN_PASSWORD:
-            session['is_admin'] = True
-            session.permanent = True  # 使session持久
-            print("✅ 登录成功，session设置:", session.get('is_admin'))
+            admin_logged_in = True
             return redirect('/admin')
         else:
             return render_template('admin_login.html', error='密码错误，请重试！')
@@ -320,23 +266,24 @@ def admin_login():
 
 @app.route('/admin/logout')
 def admin_logout():
-    session.pop('is_admin', None)
+    global admin_logged_in
+    admin_logged_in = False
     return redirect('/')
 
 @app.route('/admin')
 def admin_page():
-    print("📋 访问/admin，session状态:", session.get('is_admin'))
+    global admin_logged_in
     
-    # 检查是否是管理员
-    if not session.get('is_admin'):
-        print("⛔ 未登录，重定向到登录页")
+    # 直接检查密码参数，简化登录
+    password = request.args.get('password')
+    if password == ADMIN_PASSWORD:
+        admin_logged_in = True
+    
+    if not admin_logged_in:
         return redirect('/admin/login')
     
-    print("✅ 已登录，加载数据")
-    tours = load_tours()
-    bookings = load_bookings()
-    
-    print(f"📊 加载了 {len(tours)} 个班次，{len(bookings)} 个预订")
+    tours = storage.get_tours()
+    bookings = storage.get_bookings()
     
     total_tours = len(tours)
     total_bookings_count = len(bookings)
@@ -363,7 +310,7 @@ def api_book():
         if not seat_numbers:
             return jsonify({'success': False, 'message': '请至少选择一个座位'})
         
-        tours = load_tours()
+        tours = storage.get_tours()
         tour = next((t for t in tours if t['id'] == tour_id), None)
         
         if not tour:
@@ -372,23 +319,26 @@ def api_book():
         if is_tour_departed(tour['date'], tour['time']):
             return jsonify({'success': False, 'message': '该班次已发车，不能预订'})
         
-        bookings = load_bookings()
+        # 检查每个座位是否可用
+        bookings = storage.get_bookings()
         all_taken_seats = []
         for b in bookings:
             if b['tour_id'] == tour_id:
-                seats = json.loads(b.get('seat_numbers', '[]'))
-                all_taken_seats.extend(seats)
+                all_taken_seats.extend(b.get('seat_numbers', []))
         
         for seat in seat_numbers:
             if seat in all_taken_seats:
                 return jsonify({'success': False, 'message': f'{seat}号座位已被预订'})
         
+        # 检查是否超过剩余座位数
         available = tour['max_seats'] - tour['booked']
         if len(seat_numbers) > available:
             return jsonify({'success': False, 'message': f'剩余车位不足，仅剩{available}个'})
         
+        # 生成预订码
         booking_code = 'BK' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         
+        # 保存预订
         booking = {
             'code': booking_code,
             'name': name,
@@ -398,14 +348,13 @@ def api_book():
             'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         
-        if save_booking(booking):
-            return jsonify({
-                'success': True,
-                'message': '预订成功',
-                'booking_code': booking_code
-            })
-        else:
-            return jsonify({'success': False, 'message': '保存预订失败'})
+        storage.add_booking(booking)
+        
+        return jsonify({
+            'success': True,
+            'message': '预订成功',
+            'booking_code': booking_code
+        })
             
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -415,34 +364,29 @@ def api_create_tour():
     try:
         data = request.get_json()
         
+        # 获取自定义座位数，默认为6
         max_seats = int(data.get('max_seats', 6))
         if max_seats < 1:
             max_seats = 6
         
+        # 获取车辆型号，默认为空字符串
         vehicle_model = data.get('vehicle_model', '').strip()
         if not vehicle_model:
             vehicle_model = '未指定'
         
-        new_tour = {
+        tour_data = {
             'date': data.get('date'),
             'time': data.get('time'),
             'destination': data.get('destination'),
             'vehicle_model': vehicle_model,
-            'max_seats': max_seats,
-            'booked': 0
+            'max_seats': max_seats
         }
         
-        print(f"📝 创建新班次: {new_tour}")
+        tour_id = storage.add_tour(tour_data)
         
-        if save_tour(new_tour):
-            print(f"✅ 班次创建成功，ID: {new_tour.get('id')}")
-            return jsonify({'success': True, 'tour_id': new_tour.get('id')})
-        else:
-            print("❌ 班次创建失败")
-            return jsonify({'success': False, 'message': '保存班次失败'})
+        return jsonify({'success': True, 'tour_id': tour_id})
             
     except Exception as e:
-        print(f"❌ 创建班次异常: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/delete_tour', methods=['POST'])
@@ -451,10 +395,8 @@ def api_delete_tour():
         data = request.get_json()
         tour_id = data.get('tour_id')
         
-        if delete_tour(tour_id):
-            return jsonify({'success': True, 'message': '班次已删除'})
-        else:
-            return jsonify({'success': False, 'message': '删除班次失败'})
+        storage.delete_tour(tour_id)
+        return jsonify({'success': True, 'message': '班次已删除'})
             
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -464,11 +406,8 @@ def api_get_tour_bookings():
     try:
         tour_id = int(request.args.get('tour_id'))
         
-        bookings = load_bookings()
+        bookings = storage.get_bookings()
         tour_bookings = [b for b in bookings if b['tour_id'] == tour_id]
-        
-        for booking in tour_bookings:
-            booking['seat_numbers'] = json.loads(booking.get('seat_numbers', '[]'))
         
         return jsonify({'success': True, 'data': tour_bookings})
     except Exception as e:
@@ -478,52 +417,25 @@ def api_get_tour_bookings():
 def api_search_booking():
     query = request.args.get('q', '').lower()
     
-    bookings = load_bookings()
+    bookings = storage.get_bookings()
     results = []
     
     for booking in bookings:
         if (query in booking['code'].lower() or 
             query in booking['phone'] or
             query in booking['name'].lower()):
-            
-            booking_copy = booking.copy()
-            booking_copy['seat_numbers'] = json.loads(booking.get('seat_numbers', '[]'))
-            results.append(booking_copy)
+            results.append(booking)
     
     return jsonify({'success': True, 'data': results})
 
-# 添加一个测试路由，查看数据库状态
-@app.route('/debug/db-status')
-def debug_db_status():
-    try:
-        with closing(get_db_connection()) as conn:
-            cursor = conn.cursor()
-            
-            # 检查表
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = cursor.fetchall()
-            
-            # 检查数据
-            cursor.execute("SELECT COUNT(*) FROM tours")
-            tour_count = cursor.fetchone()[0]
-            
-            cursor.execute("SELECT COUNT(*) FROM bookings")
-            booking_count = cursor.fetchone()[0]
-            
-            return jsonify({
-                'success': True,
-                'tables': [table[0] for table in tables],
-                'tour_count': tour_count,
-                'booking_count': booking_count,
-                'db_file': DB_FILE,
-                'db_exists': os.path.exists(DB_FILE)
-            })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+# 添加一个重置路由，用于测试
+@app.route('/reset')
+def reset_data():
+    storage.reset()
+    return "数据已重置，<a href='/'>返回首页</a>"
 
 # Vercel专用
 application = app
 
 if __name__ == '__main__':
-    print("🚀 启动订车助手...")
     app.run(debug=True, host='0.0.0.0', port=3000)
