@@ -196,16 +196,16 @@ def get_html_template(title, body_content):
         <a href="/" class="logo"><i class="fas fa-bus"></i> 车位预订</a>
         <div class="nav-links">
             <!-- 这是给客人看的首页链接 -->
-            <a href="/"><i class="fas fa-home"></i> 预订首页</a>
+            <a href="/"><i class="fas fa-home"></i> 首页</a>
             <!-- 这是管理员入口，需要密码验证 -->
-            <a href="/admin"><i class="fas fa-cog"></i> 管理后台</a>
+            <a href="/admin"><i class="fas fa-cog"></i> 管理</a>
         </div>
     </nav>
     <div class="container">
         {body_content}
     </div>
     <footer style="text-align: center; color: white; margin-top: 50px; padding: 20px; opacity: 0.8;">
-        <p>© 2024 车位预订系统 | 数据已持久化保存 | 适配所有设备</p>
+        <p>© 南野际</p>
     </footer>
     <script>
         function showAlert(msg, type='success') {{
@@ -678,7 +678,7 @@ def admin_page():
     body_content = f'''
     <div style="max-width: 1200px; margin: 0 auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 style="color: white;"><i class="fas fa-cog"></i> 管理后台（管理员）</h1>
+            <h1 style="color: white;"><i class="fas fa-cog"></i> 管理员界面</h1>
             <a href="/admin/logout" class="btn" style="background: #6c757d;"><i class="fas fa-sign-out-alt"></i> 退出登录</a>
         </div>
         <p style="color: rgba(255,255,255,0.8); margin-bottom: 30px;">所有数据总览与管理 | <a href="/" style="color: white;">返回首页</a></p>
@@ -761,8 +761,8 @@ def admin_page():
         </div>
         
         <div class="card">
-            <h2><i class="fas fa-list-alt"></i> 所有预订详情（仅管理员可见）</h2>
-            <p style="color: #666; margin-bottom: 15px;">这里显示所有客户的完整预订信息，客人页面看不到这些。</p>
+            <h2><i class="fas fa-list-alt"></i> 所有预订详情</h2>
+            <p style="color: #666; margin-bottom: 15px;">这里显示所有客户的完整预订信息</p>
             <div style="overflow-x: auto; margin-top: 20px;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
