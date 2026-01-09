@@ -1,0 +1,307 @@
+/* ========== 全局CSS样式 ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: #333;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ========== 导航栏样式 ========== */
+.navbar {
+    background: white;
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #6a11cb;
+    text-decoration: none;
+}
+
+.nav-links a {
+    margin-left: 20px;
+    color: #555;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* ========== 卡片和按钮样式 ========== */
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.tour-card {
+    border-left: 6px solid #6a11cb;
+}
+
+.btn {
+    display: inline-block;
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+/* ========== 状态标签样式 ========== */
+.status-available {
+    background: #d4edda;
+    color: #155724;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.status-full {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.status-departed {
+    background: #e2e3e5;
+    color: #383d41;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+/* ========== 进度条样式 ========== */
+.progress-bar {
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 15px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, #00b09b, #96c93d);
+    border-radius: 5px;
+}
+
+/* ========== 首页统计卡片优化 ========== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    text-align: center;
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    padding: 25px 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 3px solid transparent;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(106, 17, 203, 0.2);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+}
+
+.stat-card h3 {
+    margin-bottom: 15px;
+    color: #444;
+    font-size: 1.1rem;
+}
+
+.stat-card .number {
+    font-size: 2.8rem;
+    font-weight: bold;
+    margin: 10px 0;
+    line-height: 1;
+}
+
+.stat-card .sub-text {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 10px;
+}
+
+/* ========== 座位选择样式 ========== */
+.seat-map {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.seat {
+    padding: 15px;
+    text-align: center;
+    background: #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    border: 2px solid #dee2e6;
+    transition: all 0.2s;
+}
+
+.seat:hover {
+    background: #d0ebff;
+    border-color: #74c0fc;
+}
+
+.seat.selected {
+    background: #51cf66;
+    color: white;
+    border-color: #2b8a3e;
+}
+
+.seat.unavailable {
+    background: #ffc9c9;
+    color: #868e96;
+    cursor: not-allowed;
+    border-color: #fa5252;
+}
+
+/* ========== 预订详情表格样式 ========== */
+.booking-details {
+    margin-top: 20px;
+    border-top: 2px solid #eee;
+    padding-top: 20px;
+}
+
+.booking-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.booking-table th, .booking-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.booking-table th {
+    background: #f8f9fa;
+}
+
+.booking-table tr:hover {
+    background: #f5f5f5;
+}
+
+/* ========== 管理员登录样式 ========== */
+.login-container {
+    max-width: 400px;
+    margin: 100px auto;
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+
+.login-input {
+    width: 100%;
+    padding: 12px;
+    margin: 15px 0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+/* ========== 响应式设计 (手机端优化) ========== */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 10px;
+    }
+    
+    .navbar {
+        flex-direction: column;
+        text-align: center;
+        padding: 15px;
+    }
+    
+    .nav-links {
+        margin-top: 15px;
+        display: flex;
+        width: 100%;
+        justify-content: space-around;
+    }
+    
+    .nav-links a {
+        margin: 0;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+    }
+    
+    .card {
+        padding: 20px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 22px 15px;
+    }
+    
+    .stat-card .number {
+        font-size: 2.5rem;
+    }
+    
+    .btn {
+        padding: 14px 24px;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* 预订页面在手机端改为单列 */
+    .book-page-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+    }
+}
