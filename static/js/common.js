@@ -1,4 +1,4 @@
-// ========== 通用工具函数 ==========
+
 function showAlert(msg, type = 'success') {
     alert(msg);
 }
@@ -9,7 +9,7 @@ function copyToClipboard(text) {
     });
 }
 
-// ========== 预订详情相关函数 ==========
+
 function toggleBookingDetails(tourId) {
     const detailsDiv = document.getElementById('booking-details-' + tourId);
     const toggleBtn = document.getElementById('toggle-btn-' + tourId);
@@ -68,8 +68,6 @@ async function loadBookingDetails(tourId) {
     }
 }
 
-// ========== 预订页面座位选择逻辑 ==========
-// 这个函数需要在预订页面单独引入
 function initSeatSelection() {
     let selectedSeats = [];
     
@@ -163,7 +161,6 @@ function initSeatSelection() {
     };
 }
 
-// ========== 管理后台相关函数 ==========
 function initAdminPage() {
     // 设置默认日期为明天
     const tomorrow = new Date();
@@ -222,7 +219,7 @@ async function deleteTour(tourId) {
     }
 }
 
-// ========== 页面加载完成后初始化 ==========
+
 document.addEventListener('DOMContentLoaded', function() {
     // 检查当前页面并初始化相应的功能
     if (document.querySelector('.book-page-grid')) {
@@ -235,5 +232,5 @@ document.addEventListener('DOMContentLoaded', function() {
         initAdminPage();
     }
     
-    console.log('车位预订系统已加载完成');
+    console.log('订车助手已加载完成');
 });
