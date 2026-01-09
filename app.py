@@ -25,18 +25,50 @@ def utility_processor():
         calculate_available=calculate_available,
         now=datetime.now  # 用于获取当前时间
     )
+
 def load_data():
-    if os.path.exists(DATA_FILE):
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
         try:
-            with open(DATA_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
+            if os.path.exists(DATA_FILE):
+                
+                with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    if not content:
+                        return {'tours': [], 'bookings': []}
+                    return json.loads(content)
             return {'tours': [], 'bookings': []}
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"加载数据失败 (尝试 {attempt + 1}/{max_retries}): {e}")
+            if attempt == max_retries - 1:
+                
+                return {'tours': [], 'bookings': []}
+            time.sleep(0.1)  
     return {'tours': [], 'bookings': []}
 
 def save_data(data):
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    import tempfile
+    try:
+        
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', 
+                                       dir=os.path.dirname(DATA_FILE), 
+                                       delete=False) as tmp_file:
+            json.dump(data, tmp_file, ensure_ascii=False, indent=2)
+            tmp_file.flush()
+            os.fsync(tmp_file.fileno())
+
+        os.replace(tmp_file.name, DATA_FILE)
+        return True
+    except Exception as e:
+        print(f"保存数据失败: {e}")
+        try:
+            if os.path.exists(tmp_file.name):
+                os.unlink(tmp_file.name)
+        except:
+            pass
+        return False
+
 
 def generate_booking_code():
     return 'BK' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -60,15 +92,22 @@ def is_tour_departed(tour_date, tour_time):
 
 def should_keep_tour(tour_date, tour_time):
     try:
+        from datetime import datetime, timezone, timedelta
+        
         tour_datetime_str = f"{tour_date} {tour_time}"
-        tour_datetime = datetime.strptime(tour_datetime_str, '%Y-%m-%d %H:%M')
-        current_time = datetime.now()
-        if tour_datetime < current_time:
-            time_passed = current_time - tour_datetime
+        
+        naive_tour_datetime = datetime.strptime(tour_datetime_str, '%Y-%m-%d %H:%M')
+        
+        current_time_utc = datetime.utcnow()
+        
+        if naive_tour_datetime < datetime.now():
+            time_passed = datetime.now() - naive_tour_datetime
             return time_passed.days <= 7
+        
         return True
-    except:
-        return False
+    except Exception as e:
+        print(f"检查班次保留状态出错: {e}, date={tour_date}, time={tour_time}")
+        return True
 
 @app.route('/')
 def home():
