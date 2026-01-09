@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+
+{% block title %}首页 - 车位预订系统{% endblock %}
+
+{% block content %}
+<h1 style="color: white; text-align: center; margin-bottom: 30px;">🚌 在线车位预订</h1>
+
+<!-- 统计卡片网格 (使用优化后的样式) -->
+<div class="stats-grid">
+    <a href="/tours" style="text-decoration: none;">
+        <div class="stat-card">
+            <h3><i class="fas fa-calendar-day"></i> 有效班次</h3>
+            <div class="number" style="color: #6a11cb;">{{ valid_count }}</div>
+            <p class="sub-text">点击查看所有班次详情</p>
+        </div>
+    </a>
+    <a href="/bookings" style="text-decoration: none;">
+        <div class="stat-card">
+            <h3><i class="fas fa-user-check"></i> 总预订人数</h3>
+            <div class="number" style="color: #00b09b;">{{ total_bookings }}</div>
+            <p class="sub-text">点击查看详细预订记录</p>
+        </div>
+    </a>
+    <a href="/departed" style="text-decoration: none;">
+        <div class="stat-card">
+            <h3><i class="fas fa-car"></i> 已发车班次</h3>
+            <div class="number" style="color: #ff6b6b;">{{ departed_count }}</div>
+            <p class="sub-text">点击查看历史发车记录</p>
+        </div>
+    </a>
+</div>
+
+<h2 style="color: white; margin-bottom: 20px;">班次列表（含已发车）</h2>
+
+<!-- 班次列表 (和原来逻辑完全一样) -->
+{% if valid_tours %}
+    {% for tour in valid_tours %}
+        {% set available = tour['max_seats'] - tour['booked'] %}
+        {% set percent = (tour['booked'] / tour['max_seats'] * 100)|int if tour['max_seats'] > 0 else 0 %}
+        {% set departed = tour['date'] ~ ' ' ~ tour['time'] | is_tour_departed %}
+        
+        {% if departed %}
+            {% set status_class = 'status-departed' %}
+            {% set status_text = '已发车' %}
+            {% set book_button = '<button class="btn" style="background:#6c757d;" disabled><i class="fas fa-ban"></i> 已发车</button>' %}
+        {% elif available == 0 %}
+            {% set status_class = 'status-full' %}
+            {% set status_text = '已满员' %}
+            {% set book_button = '<button class="btn" style="background:#6c757d;" disabled><i class="fas fa-ban"></i> 已满员</button>' %}
+        {% else %}
+            {% set status_class = 'status-available' %}
+            {% set status_text = '可预订 (' ~ available ~ '个空位)' %}
+            {% set book_button = '<button class="btn" onclick="location.href=\'/book/' ~ tour['id']|string ~ '\'"><i class="fas fa-ticket-alt"></i> 选择座位并预订</button>' %}
+        {% endif %}
+        
+        <div class="card tour-card">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                <div>
+                    <h2 style="color: #2575fc;">{{ tour['destination'] }}</h2>
+                    <p style="color: #666; margin-top: 5px;"><i class="fas fa-car"></i> 车辆型号: {{ tour.get('vehicle_model', '未指定') }}</p>
+                </div>
+                <span class="{{ status_class }}">{{ status_text }}</span>
+            </div>
+            <p><i class="far fa-calendar"></i> {{ tour['date'] }} {{ tour['time'] }} 出发</p>
+            <p><i class="fas fa-users"></i> 座位: {{ tour['booked'] }}/{{ tour['max_seats'] }} (满{{ tour['max_seats'] }}人发车)</p>
+            <div class="progress-bar"><div class="progress-fill" style="width:{{ percent }}%"></div></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                <span>已报名 {{ tour['booked'] }} 人</span>
+                {{ book_button | safe }}
+            </div>
+            
+            <!-- 预订详情折叠区域 -->
+            <div style="margin-top: 20px;">
+                <button id="toggle-btn-{{ tour['id'] }}" class="btn" style="background: #6c757d; padding: 8px 16px; font-size: 0.9rem;" onclick="toggleBookingDetails({{ tour['id'] }})">
+                    <i class="fas fa-chevron-down"></i> 查看预订详情
+                </button>
+                <div id="booking-details-{{ tour['id'] }}" class="booking-details" style="display: none;">
+                    <!-- 预订详情将通过JavaScript动态加载 -->
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <p style="text-align:center;color:#666;">暂无班次，请稍后查看。</p>
+    </div>
+{% endif %}
+
+<div class="card">
+    <h3><i class="fas fa-info-circle"></i> 使用说明</h3>
+    <ul style="margin-left: 20px; margin-top: 15px; color: #555;">
+        <li>点击<strong>「选择座位并预订」</strong>进入选座页面。</li>
+        <li>每个座位都需要单独选择，支持为多人同时预订。</li>
+        <li>已发车的班次会保留一周以供查看，但不能预订。</li>
+        <li>点击<strong>「查看预订详情」</strong>可查看该班次的所有预订信息。</li>
+        <li>如需创建/删除班次，请使用<strong>管理后台</strong>（需要密码）。</li>
+        <li>点击上方的<strong>统计卡片</strong>可查看各类详情页面。</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 这个函数会被放在 common.js 中，这里是为了确保首页能立即使用
+// 实际部署时我们会把它移到 common.js
+function toggleBookingDetails(tourId) {
+    const detailsDiv = document.getElementById('booking-details-' + tourId);
+    const toggleBtn = document.getElementById('toggle-btn-' + tourId);
+    if (detailsDiv.style.display === 'none' || !detailsDiv.style.display) {
+        detailsDiv.style.display = 'block';
+        toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 隐藏预订详情';
+        if (detailsDiv.innerHTML.trim() === '') {
+            loadBookingDetails(tourId);
+        }
+    } else {
+        detailsDiv.style.display = 'none';
+        toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 查看预订详情';
+    }
+}
+</script>
+{% endblock %}

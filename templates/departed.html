@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block title %}已发车班次 - 车位预订系统{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <a href="/" class="btn" style="background: #6c757d; margin-bottom: 20px;"><i class="fas fa-arrow-left"></i> 返回首页</a>
+    <div class="card">
+        <h1><i class="fas fa-car"></i> 已发车班次记录</h1>
+        <p style="color: #666; margin: 10px 0 25px 0;">共 <strong style="color: #ff6b6b;">{{ departed_tours|length }}</strong> 个已发车班次（保留一周内记录）</p>
+        
+        {% if departed_tours %}
+            {% for tour in departed_tours %}
+                {% set tour_datetime = tour['date'] ~ ' ' ~ tour['time'] %}
+                {% set time_passed = namespace(days=0, hours=0) %}
+                {% set time_passed.days = (now().date() - tour_datetime|string_to_date).days %}
+                {% set time_passed.hours = ((now() - tour_datetime|string_to_date).seconds // 3600) %}
+                
+                <div class="card" style="border-left: 6px solid #ff6b6b; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div>
+                            <h2 style="color: #2575fc;">{{ tour['destination'] }}</h2>
+                            <p style="color: #666; margin-top: 5px;"><i class="fas fa-car"></i> {{ tour.get('vehicle_model', '未指定') }}</p>
+                        </div>
+                        <span class="status-departed">已发车 {{ time_passed.days }}天</span>
+                    </div>
+                    <p><i class="far fa-calendar"></i> 发车时间: {{ tour['date'] }} {{ tour['time'] }}</p>
+                    <p><i class="fas fa-users"></i> 座位情况: {{ tour['booked'] }}/{{ tour['max_seats'] }} (满员率: {{ (tour['booked']/tour['max_seats']*100)|int }}%)</p>
+                    <p><i class="fas fa-history"></i> 发车于: {{ time_passed.days }}天{{ time_passed.hours }}小时前</p>
+                    <div style="margin-top: 15px;">
+                        <button class="btn" style="background: #6c757d; padding: 8px 16px; font-size: 0.9rem;" onclick="toggleBookingDetails({{ tour['id'] }})">
+                            <i class="fas fa-list"></i> 查看历史预订
+                        </button>
+                        <div id="booking-details-{{ tour['id'] }}" class="booking-details" style="display: none; margin-top: 15px;">
+                            <!-- 预订详情将通过JavaScript动态加载 -->
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align:center;color:#666;padding:40px;">暂无已发车班次记录。</p>
+        {% endif %}
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 30px;">
+            <h3><i class="fas fa-info-circle"></i> 说明</h3>
+            <p style="color: #666; margin-top: 10px;">已发车班次会在此保留一周，供查看历史记录和统计数据。超过一周的班次将自动从系统中移除。</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
