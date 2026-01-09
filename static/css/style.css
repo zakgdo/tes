@@ -1,4 +1,4 @@
-/* ========== 全局CSS样式 ========== */
+
 * {
     margin: 0;
     padding: 0;
@@ -18,7 +18,7 @@ body {
     margin: 0 auto;
 }
 
-/* ========== 导航栏样式 ========== */
+
 .navbar {
     background: white;
     padding: 15px 25px;
@@ -44,7 +44,7 @@ body {
     font-weight: 500;
 }
 
-/* ========== 卡片和按钮样式 ========== */
+
 .card {
     background: white;
     border-radius: 16px;
@@ -79,7 +79,7 @@ body {
     opacity: 0.9;
 }
 
-/* ========== 状态标签样式 ========== */
+
 .status-available {
     background: #d4edda;
     color: #155724;
@@ -107,7 +107,7 @@ body {
     display: inline-block;
 }
 
-/* ========== 进度条样式 ========== */
+
 .progress-bar {
     height: 10px;
     background: #e9ecef;
@@ -122,7 +122,7 @@ body {
     border-radius: 5px;
 }
 
-/* ========== 首页统计卡片优化 ========== */
+
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -166,7 +166,7 @@ body {
     margin-top: 10px;
 }
 
-/* ========== 座位选择样式 ========== */
+
 .seat-map {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -203,7 +203,7 @@ body {
     border-color: #fa5252;
 }
 
-/* ========== 预订详情表格样式 ========== */
+
 .booking-details {
     margin-top: 20px;
     border-top: 2px solid #eee;
@@ -230,7 +230,7 @@ body {
     background: #f5f5f5;
 }
 
-/* ========== 管理员登录样式 ========== */
+
 .login-container {
     max-width: 400px;
     margin: 100px auto;
@@ -249,7 +249,7 @@ body {
     font-size: 1rem;
 }
 
-/* ========== 响应式设计 (手机端优化) ========== */
+
 @media (max-width: 768px) {
     .container {
         padding: 0 10px;
@@ -299,7 +299,6 @@ body {
         justify-content: center;
     }
     
-    /* 预订页面在手机端改为单列 */
     .book-page-grid {
         grid-template-columns: 1fr !important;
         gap: 20px !important;
