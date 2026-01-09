@@ -26,7 +26,7 @@
                     </div>
                     <p><i class="far fa-calendar"></i> 发车时间: {{ tour['date'] }} {{ tour['time'] }}</p>
                     <p><i class="fas fa-users"></i> 座位情况: {{ tour['booked'] }}/{{ tour['max_seats'] }} (满员率: {{ (tour['booked']/tour['max_seats']*100)|int }}%)</p>
-                    <p><i class="fas fa-history"></i> 发车于: {{ time_passed.days }}天{{ time_passed.hours }}小时前</p>
+                    <p><i class="fas fa-history"></i> 发车于: {{ tour.days_passed }}天{{ tour.hours_passed }}小时前</p>
                     <div style="margin-top: 15px;">
                         <button class="btn" style="background: #6c757d; padding: 8px 16px; font-size: 0.9rem;" onclick="toggleBookingDetails({{ tour['id'] }})">
                             <i class="fas fa-list"></i> 查看历史预订
@@ -49,3 +49,4 @@
 </div>
 
 {% endblock %}
+
