@@ -8,11 +8,13 @@ import sqlite3
 from contextlib import closing
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+# 使用固定密钥而不是随机密钥（重要！）
+app.secret_key = "your-fixed-secret-key-for-vercel-123456"
 
+# 数据库文件路径
 DB_FILE = '/tmp/booking_data.db'
 
-# 初始化数据库
+# 初始化数据库（确保表存在）
 def init_database():
     try:
         with closing(sqlite3.connect(DB_FILE)) as conn:
@@ -45,12 +47,26 @@ def init_database():
             ''')
             
             conn.commit()
-            print("数据库初始化成功")
+            print("✅ 数据库初始化成功")
     except Exception as e:
-        print(f"数据库初始化失败: {e}")
+        print(f"❌ 数据库初始化失败: {e}")
 
-# 初始化数据库（每次启动时执行）
+# 在应用启动时初始化数据库
 init_database()
+
+@app.before_request
+def before_request():
+    """每次请求前确保数据库存在"""
+    try:
+        # 简单检查数据库连接
+        with closing(sqlite3.connect(DB_FILE)) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = cursor.fetchall()
+            if not tables:
+                init_database()
+    except:
+        init_database()
 
 @app.context_processor
 def utility_processor():
@@ -70,6 +86,7 @@ def utility_processor():
         now=datetime.now
     )
 
+# 数据库操作辅助函数
 def get_db_connection():
     return sqlite3.connect(DB_FILE)
 
@@ -77,13 +94,18 @@ def load_tours():
     """加载所有班次"""
     try:
         with closing(get_db_connection()) as conn:
-            conn.row_factory = sqlite3.Row  # 使返回结果为字典格式
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM tours ORDER BY date, time')
             tours = cursor.fetchall()
             return [dict(tour) for tour in tours]
     except Exception as e:
-        print(f"加载班次失败: {e}")
+        print(f"❌ 加载班次失败: {e}")
+        # 如果出错，尝试重新初始化数据库
+        try:
+            init_database()
+        except:
+            pass
         return []
 
 def load_bookings():
@@ -96,7 +118,7 @@ def load_bookings():
             bookings = cursor.fetchall()
             return [dict(booking) for booking in bookings]
     except Exception as e:
-        print(f"加载预订失败: {e}")
+        print(f"❌ 加载预订失败: {e}")
         return []
 
 def save_tour(tour):
@@ -104,27 +126,16 @@ def save_tour(tour):
     try:
         with closing(get_db_connection()) as conn:
             cursor = conn.cursor()
-            if 'id' in tour:
-                # 更新现有班次
-                cursor.execute('''
-                    UPDATE tours SET 
-                    date=?, time=?, destination=?, vehicle_model=?, max_seats=?, booked=?
-                    WHERE id=?
-                ''', (tour['date'], tour['time'], tour['destination'], 
-                      tour.get('vehicle_model', '未指定'), tour['max_seats'], 
-                      tour.get('booked', 0), tour['id']))
-            else:
-                # 插入新班次
-                cursor.execute('''
-                    INSERT INTO tours (date, time, destination, vehicle_model, max_seats, booked)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', (tour['date'], tour['time'], tour['destination'], 
-                      tour.get('vehicle_model', '未指定'), tour['max_seats'], tour.get('booked', 0)))
-                tour['id'] = cursor.lastrowid
+            cursor.execute('''
+                INSERT INTO tours (date, time, destination, vehicle_model, max_seats, booked)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (tour['date'], tour['time'], tour['destination'], 
+                  tour.get('vehicle_model', '未指定'), tour['max_seats'], tour.get('booked', 0)))
+            tour['id'] = cursor.lastrowid
             conn.commit()
             return True
     except Exception as e:
-        print(f"保存班次失败: {e}")
+        print(f"❌ 保存班次失败: {e}")
         return False
 
 def save_booking(booking):
@@ -138,7 +149,6 @@ def save_booking(booking):
             ''', (booking['code'], booking['name'], booking['phone'], 
                   json.dumps(booking['seat_numbers']), booking['tour_id'], booking['created_at']))
             
-            # 更新班次的预订人数
             cursor.execute('''
                 UPDATE tours SET booked = booked + ? WHERE id = ?
             ''', (len(booking['seat_numbers']), booking['tour_id']))
@@ -146,7 +156,7 @@ def save_booking(booking):
             conn.commit()
             return True
     except Exception as e:
-        print(f"保存预订失败: {e}")
+        print(f"❌ 保存预订失败: {e}")
         return False
 
 def delete_tour(tour_id):
@@ -154,14 +164,12 @@ def delete_tour(tour_id):
     try:
         with closing(get_db_connection()) as conn:
             cursor = conn.cursor()
-            # 删除班次
             cursor.execute('DELETE FROM tours WHERE id = ?', (tour_id,))
-            # 删除相关预订
             cursor.execute('DELETE FROM bookings WHERE tour_id = ?', (tour_id,))
             conn.commit()
             return True
     except Exception as e:
-        print(f"删除班次失败: {e}")
+        print(f"❌ 删除班次失败: {e}")
         return False
 
 def is_tour_departed(tour_date, tour_time):
@@ -186,6 +194,7 @@ def should_keep_tour(tour_date, tour_time):
         print(f"检查班次保留状态出错: {e}, date={tour_date}, time={tour_time}")
         return True
 
+# 路由部分
 @app.route('/')
 def home():
     tours = load_tours()
@@ -225,6 +234,7 @@ def bookings_page():
     tours = load_tours()
     bookings = load_bookings()
     valid_tours = [t for t in tours if should_keep_tour(t['date'], t['time'])]
+    
     tour_booking_counts = []
     total_bookings = 0
     for tour in valid_tours:
@@ -283,6 +293,7 @@ def book_page(tour_id):
     
     if is_tour_departed(tour['date'], tour['time']):
         return render_template('error.html', message='该班次已发车，不能预订')
+    
     bookings = load_bookings()
     taken_seats = []
     for b in bookings:
@@ -300,6 +311,8 @@ def admin_login():
         password = request.form.get('password')
         if password == ADMIN_PASSWORD:
             session['is_admin'] = True
+            session.permanent = True  # 使session持久
+            print("✅ 登录成功，session设置:", session.get('is_admin'))
             return redirect('/admin')
         else:
             return render_template('admin_login.html', error='密码错误，请重试！')
@@ -312,11 +325,18 @@ def admin_logout():
 
 @app.route('/admin')
 def admin_page():
+    print("📋 访问/admin，session状态:", session.get('is_admin'))
+    
+    # 检查是否是管理员
     if not session.get('is_admin'):
+        print("⛔ 未登录，重定向到登录页")
         return redirect('/admin/login')
     
+    print("✅ 已登录，加载数据")
     tours = load_tours()
     bookings = load_bookings()
+    
+    print(f"📊 加载了 {len(tours)} 个班次，{len(bookings)} 个预订")
     
     total_tours = len(tours)
     total_bookings_count = len(bookings)
@@ -343,18 +363,15 @@ def api_book():
         if not seat_numbers:
             return jsonify({'success': False, 'message': '请至少选择一个座位'})
         
-        # 加载数据
         tours = load_tours()
         tour = next((t for t in tours if t['id'] == tour_id), None)
         
         if not tour:
             return jsonify({'success': False, 'message': '班次不存在'})
         
-        # 检查班次是否已发车
         if is_tour_departed(tour['date'], tour['time']):
             return jsonify({'success': False, 'message': '该班次已发车，不能预订'})
         
-        # 检查每个座位是否可用
         bookings = load_bookings()
         all_taken_seats = []
         for b in bookings:
@@ -366,15 +383,12 @@ def api_book():
             if seat in all_taken_seats:
                 return jsonify({'success': False, 'message': f'{seat}号座位已被预订'})
         
-        # 检查是否超过剩余座位数
         available = tour['max_seats'] - tour['booked']
         if len(seat_numbers) > available:
             return jsonify({'success': False, 'message': f'剩余车位不足，仅剩{available}个'})
         
-        # 生成预订码
         booking_code = 'BK' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         
-        # 创建预订对象
         booking = {
             'code': booking_code,
             'name': name,
@@ -384,7 +398,6 @@ def api_book():
             'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         
-        # 保存预订
         if save_booking(booking):
             return jsonify({
                 'success': True,
@@ -402,12 +415,10 @@ def api_create_tour():
     try:
         data = request.get_json()
         
-        # 获取自定义座位数，默认为6
         max_seats = int(data.get('max_seats', 6))
         if max_seats < 1:
             max_seats = 6
         
-        # 获取车辆型号，默认为空字符串
         vehicle_model = data.get('vehicle_model', '').strip()
         if not vehicle_model:
             vehicle_model = '未指定'
@@ -421,13 +432,17 @@ def api_create_tour():
             'booked': 0
         }
         
-        # 保存班次
+        print(f"📝 创建新班次: {new_tour}")
+        
         if save_tour(new_tour):
+            print(f"✅ 班次创建成功，ID: {new_tour.get('id')}")
             return jsonify({'success': True, 'tour_id': new_tour.get('id')})
         else:
+            print("❌ 班次创建失败")
             return jsonify({'success': False, 'message': '保存班次失败'})
             
     except Exception as e:
+        print(f"❌ 创建班次异常: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/delete_tour', methods=['POST'])
@@ -471,15 +486,44 @@ def api_search_booking():
             query in booking['phone'] or
             query in booking['name'].lower()):
             
-            # 解析座位号
             booking_copy = booking.copy()
             booking_copy['seat_numbers'] = json.loads(booking.get('seat_numbers', '[]'))
             results.append(booking_copy)
     
     return jsonify({'success': True, 'data': results})
 
+# 添加一个测试路由，查看数据库状态
+@app.route('/debug/db-status')
+def debug_db_status():
+    try:
+        with closing(get_db_connection()) as conn:
+            cursor = conn.cursor()
+            
+            # 检查表
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = cursor.fetchall()
+            
+            # 检查数据
+            cursor.execute("SELECT COUNT(*) FROM tours")
+            tour_count = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM bookings")
+            booking_count = cursor.fetchone()[0]
+            
+            return jsonify({
+                'success': True,
+                'tables': [table[0] for table in tables],
+                'tour_count': tour_count,
+                'booking_count': booking_count,
+                'db_file': DB_FILE,
+                'db_exists': os.path.exists(DB_FILE)
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 # Vercel专用
 application = app
 
 if __name__ == '__main__':
+    print("🚀 启动订车助手...")
     app.run(debug=True, host='0.0.0.0', port=3000)
