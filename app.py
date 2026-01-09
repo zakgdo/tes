@@ -141,7 +141,25 @@ def departed_page():
     app_data = load_data()
     tours_db = app_data['tours']
     valid_tours = [t for t in tours_db if should_keep_tour(t['date'], t['time'])]
-    departed_tours = [t for t in valid_tours if is_tour_departed(t['date'], t['time'])]
+    
+    departed_tours = []
+    for tour in valid_tours:
+        if is_tour_departed(tour['date'], tour['time']):
+            tour_datetime_str = f"{tour['date']} {tour['time']}"
+            try:
+                tour_datetime = datetime.strptime(tour_datetime_str, '%Y-%m-%d %H:%M')
+                time_passed = datetime.now() - tour_datetime
+                days_passed = time_passed.days
+                hours_passed = time_passed.seconds // 3600
+            except:
+                days_passed = 0
+                hours_passed = 0
+            
+            tour_with_time = tour.copy()
+            tour_with_time['days_passed'] = days_passed
+            tour_with_time['hours_passed'] = hours_passed
+            departed_tours.append(tour_with_time)
+    
     return render_template('departed.html', departed_tours=departed_tours)
 
 @app.route('/book/<int:tour_id>')
