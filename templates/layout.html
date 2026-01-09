@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>{% block title %}车位预订系统{% endblock %}</title>
+    <title>{% block title %}携程旅游订车助手{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- 引入我们分离的CSS文件 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* 这里暂时留空，样式会移到style.css里 */
+        
     </style>
 </head>
 <body>
-    <!-- 导航栏 (和原来一模一样) -->
     <nav class="navbar">
         <a href="/" class="logo"><i class="fas fa-bus"></i> 车位预订</a>
         <div class="nav-links">
@@ -22,18 +20,16 @@
     </nav>
 
     <div class="container">
-        <!-- 这个block区域会被其他页面的具体内容替换 -->
         {% block content %}{% endblock %}
     </div>
 
-    <!-- 页脚 (和原来一模一样) -->
     <footer style="text-align: center; color: white; margin-top: 50px; padding: 20px; opacity: 0.8;">
         <p>© 南野际</p>
     </footer>
 
-    <!-- 引入我们分离的JS文件 -->
     <script src="{{ url_for('static', filename='js/common.js') }}"></script>
-    <!-- 这个block允许其他页面添加自己独有的JS脚本 -->
+
     {% block scripts %}{% endblock %}
 </body>
+
 </html>
