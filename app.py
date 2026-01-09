@@ -203,8 +203,27 @@ def admin_page():
     app_data = load_data()
     tours_db = app_data['tours']
     bookings_db = app_data['bookings']
-    return render_template('admin.html', tours_db=tours_db, bookings_db=bookings_db)
-
+    
+    total_tours = len(tours_db)
+    total_bookings_count = len(bookings_db)
+    
+    departed_count = 0
+    for tour in tours_db:
+        if is_tour_departed(tour['date'], tour['time']):
+            departed_count += 1
+    
+    full_count = 0
+    for tour in tours_db:
+        if tour['booked'] >= tour['max_seats']:
+            full_count += 1
+    
+    return render_template('admin.html',
+                         tours_db=tours_db,
+                         bookings_db=bookings_db,
+                         total_tours=total_tours,
+                         total_bookings_count=total_bookings_count,
+                         departed_count=departed_count,
+                         full_count=full_count)
 @app.route('/api/book', methods=['POST'])
 def api_book():
     try:
