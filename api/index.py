@@ -349,7 +349,7 @@ def home():
         '''
     
     body_content = f'''
-    <h1 style="color: white; text-align: center; margin-bottom: 30px;">🚌 在线车位预订（客人）</h1>
+    <h1 style="color: white; text-align: center; margin-bottom: 30px;">🚌 在线车位预订</h1>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
         <div class="card" style="text-align: center; background: rgba(255,255,255,0.95);">
             <h3><i class="fas fa-calendar-day"></i> 有效班次</h3>
