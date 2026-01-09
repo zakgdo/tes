@@ -1,11 +1,10 @@
 {% extends "layout.html" %}
 
-{% block title %}首页 - 车位预订系统{% endblock %}
+{% block title %}首页 - 携程旅游订车助手{% endblock %}
 
 {% block content %}
 <h1 style="color: white; text-align: center; margin-bottom: 30px;">🚌 在线车位预订</h1>
 
-<!-- 统计卡片网格 (使用优化后的样式) -->
 <div class="stats-grid">
     <a href="/tours" style="text-decoration: none;">
         <div class="stat-card">
@@ -32,7 +31,6 @@
 
 <h2 style="color: white; margin-bottom: 20px;">班次列表（含已发车）</h2>
 
-<!-- 班次列表 (和原来逻辑完全一样) -->
 {% if valid_tours %}
     {% for tour in valid_tours %}
         {% set available = tour['max_seats'] - tour['booked'] %}
@@ -69,13 +67,11 @@
                 {{ book_button | safe }}
             </div>
             
-            <!-- 预订详情折叠区域 -->
             <div style="margin-top: 20px;">
                 <button id="toggle-btn-{{ tour['id'] }}" class="btn" style="background: #6c757d; padding: 8px 16px; font-size: 0.9rem;" onclick="toggleBookingDetails({{ tour['id'] }})">
                     <i class="fas fa-chevron-down"></i> 查看预订详情
                 </button>
                 <div id="booking-details-{{ tour['id'] }}" class="booking-details" style="display: none;">
-                    <!-- 预订详情将通过JavaScript动态加载 -->
                 </div>
             </div>
         </div>
@@ -93,16 +89,12 @@
         <li>每个座位都需要单独选择，支持为多人同时预订。</li>
         <li>已发车的班次会保留一周以供查看，但不能预订。</li>
         <li>点击<strong>「查看预订详情」</strong>可查看该班次的所有预订信息。</li>
-        <li>如需创建/删除班次，请使用<strong>管理后台</strong>（需要密码）。</li>
-        <li>点击上方的<strong>统计卡片</strong>可查看各类详情页面。</li>
     </ul>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// 这个函数会被放在 common.js 中，这里是为了确保首页能立即使用
-// 实际部署时我们会把它移到 common.js
 function toggleBookingDetails(tourId) {
     const detailsDiv = document.getElementById('booking-details-' + tourId);
     const toggleBtn = document.getElementById('toggle-btn-' + tourId);
@@ -118,4 +110,5 @@ function toggleBookingDetails(tourId) {
     }
 }
 </script>
+
 {% endblock %}
