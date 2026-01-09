@@ -8,9 +8,23 @@ import os
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-# ============== 数据存储 (和原来完全一样) ==============
 DATA_FILE = '/tmp/booking_data.json'
 
+@app.context_processor
+def utility_processor():
+    def check_departed(date_str, time_str):
+        try:
+            tour_datetime = datetime.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
+            return tour_datetime < datetime.now()
+        except:
+            return False
+    def calculate_available(tour):
+        return tour['max_seats'] - tour['booked']
+    return dict(
+        is_tour_departed=check_departed,
+        calculate_available=calculate_available,
+        now=datetime.now  # 用于获取当前时间
+    )
 def load_data():
     if os.path.exists(DATA_FILE):
         try:
@@ -24,7 +38,6 @@ def save_data(data):
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-# ---------- 工具函数 (和原来完全一样) ----------
 def generate_booking_code():
     return 'BK' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
@@ -57,7 +70,6 @@ def should_keep_tour(tour_date, tour_time):
     except:
         return False
 
-# ---------- 网站页面路由 ----------
 @app.route('/')
 def home():
     app_data = load_data()
@@ -151,7 +163,6 @@ def book_page(tour_id):
             taken_seats.append(seat_nums)
     return render_template('book.html', tour=tour, taken_seats=taken_seats)
 
-# ---------- 管理员页面 ----------
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -176,26 +187,14 @@ def admin_page():
     bookings_db = app_data['bookings']
     return render_template('admin.html', tours_db=tours_db, bookings_db=bookings_db)
 
-# ---------- API 接口（处理数据）----------
-# 注意：以下所有API路由代码需要从你原来的app.py中完整复制过来
-# 请找到你原来app.py中以下部分，复制粘贴到这里：
-# 1. @app.route('/api/book', methods=['POST'])
-# 2. @app.route('/api/create_tour', methods=['POST'])
-# 3. @app.route('/api/delete_tour', methods=['POST'])
-# 4. @app.route('/api/get_tour_bookings', methods=['GET'])
-# 5. @app.route('/api/search_booking', methods=['GET'])
-# 这是保持你所有预订、创建班次、删除班次功能正常的关键！
-
-# 示例格式（你需要复制完整代码，这只是个样子）：
 @app.route('/api/book', methods=['POST'])
 def api_book():
-    """处理预订请求（已修改为支持选座）"""
     try:
         data = request.get_json()
         tour_id = data.get('tour_id')
         name = data.get('name')
         phone = data.get('phone')
-        seat_numbers = data.get('seat_numbers', [])  # 改为接收座位号列表
+        seat_numbers = data.get('seat_numbers', [])  # 接收座位号列表
         
         if not seat_numbers:
             return jsonify({'success': False, 'message': '请至少选择一个座位'})
@@ -247,14 +246,11 @@ def api_book():
         }
         bookings_db.append(booking)
         
-        # 更新团期预订人数（增加已选座位数量）
+        # 更新团期预订人数
         tour['booked'] += len(seat_numbers)
-        
-        # ============== 核心修改1：保存数据到文件 ==============
         app_data['tours'] = tours_db
         app_data['bookings'] = bookings_db
         save_data(app_data)
-        # ============== 核心修改1结束 ==============
         
         return jsonify({
             'success': True,
@@ -267,7 +263,6 @@ def api_book():
 
 @app.route('/api/create_tour', methods=['POST'])
 def api_create_tour():
-    """创建新团期（新增车辆型号）"""
     try:
         data = request.get_json()
         
@@ -298,11 +293,8 @@ def api_create_tour():
             'booked': 0
         }
         tours_db.append(new_tour)
-        
-        # ============== 核心修改1：保存数据到文件 ==============
         app_data['tours'] = tours_db
         save_data(app_data)
-        # ============== 核心修改1结束 ==============
         
         return jsonify({'success': True, 'tour_id': new_id})
     except Exception as e:
@@ -310,7 +302,6 @@ def api_create_tour():
 
 @app.route('/api/delete_tour', methods=['POST'])
 def api_delete_tour():
-    """删除班次（管理员功能）"""
     try:
         data = request.get_json()
         tour_id = data.get('tour_id')
@@ -326,11 +317,9 @@ def api_delete_tour():
         # 删除与该班次相关的所有预订
         bookings_db = [b for b in bookings_db if b['tour_id'] != tour_id]
         
-        # ============== 核心修改1：保存数据到文件 ==============
         app_data['tours'] = tours_db
         app_data['bookings'] = bookings_db
         save_data(app_data)
-        # ============== 核心修改1结束 ==============
         
         return jsonify({'success': True, 'message': '班次已删除'})
     except Exception as e:
@@ -338,7 +327,6 @@ def api_delete_tour():
 
 @app.route('/api/get_tour_bookings', methods=['GET'])
 def api_get_tour_bookings():
-    """获取指定班次的所有预订信息"""
     try:
         tour_id = int(request.args.get('tour_id'))
         
@@ -355,7 +343,6 @@ def api_get_tour_bookings():
 
 @app.route('/api/search_booking', methods=['GET'])
 def api_search_booking():
-    """查询预订"""
     query = request.args.get('q', '').lower()
     
     # 从文件加载最新数据
