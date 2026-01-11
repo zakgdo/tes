@@ -193,7 +193,7 @@ def get_html_template(title, body_content):
 </head>
 <body>
     <nav class="navbar">
-        <a href="/" class="logo"><i class="fas fa-bus"></i> 车位预订</a>
+        <a href="/" class="logo"><i class="fas fa-bus"></i> 携程旅游订车助手</a>
         <div class="nav-links">
             <!-- 这是给客人看的首页链接 -->
             <a href="/"><i class="fas fa-home"></i> 首页</a>
