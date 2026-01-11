@@ -42,7 +42,7 @@ def generate_booking_code():
     return 'BK' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 # 简单的管理员密码验证（你可以修改这个密码）
-ADMIN_PASSWORD = "admin123"
+ADMIN_PASSWORD = "050522"
 
 # 检查管理员登录状态的装饰器
 def admin_required(f):
@@ -90,7 +90,7 @@ def get_html_template(title, body_content):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>{title} - 车位预订系统</title>
+    <title>{title} - 携程旅游订车助手</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* 全局CSS样式 */
@@ -196,16 +196,16 @@ def get_html_template(title, body_content):
         <a href="/" class="logo"><i class="fas fa-bus"></i> 车位预订</a>
         <div class="nav-links">
             <!-- 这是给客人看的首页链接 -->
-            <a href="/"><i class="fas fa-home"></i> 预订首页</a>
+            <a href="/"><i class="fas fa-home"></i> 首页</a>
             <!-- 这是管理员入口，需要密码验证 -->
-            <a href="/admin"><i class="fas fa-cog"></i> 管理后台</a>
+            <a href="/admin"><i class="fas fa-cog"></i> 管理</a>
         </div>
     </nav>
     <div class="container">
         {body_content}
     </div>
     <footer style="text-align: center; color: white; margin-top: 50px; padding: 20px; opacity: 0.8;">
-        <p>© 2024 车位预订系统 | 数据已持久化保存 | 适配所有设备</p>
+        <p>© 南野际</p>
     </footer>
     <script>
         function showAlert(msg, type='success') {{
@@ -270,7 +270,7 @@ def get_html_template(title, body_content):
 # ---------- 网站页面路由 ----------
 @app.route('/')
 def home():
-    """系统首页（客人子系统）"""
+    """首页"""
     # 从文件加载最新数据
     global tours_db
     app_data = load_data()
@@ -349,7 +349,7 @@ def home():
         '''
     
     body_content = f'''
-    <h1 style="color: white; text-align: center; margin-bottom: 30px;">🚌 在线车位预订（客人）</h1>
+    <h1 style="color: white; text-align: center; margin-bottom: 30px;">🚌 在线车位预订</h1>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
         <div class="card" style="text-align: center; background: rgba(255,255,255,0.95);">
             <h3><i class="fas fa-calendar-day"></i> 有效班次</h3>
@@ -371,9 +371,8 @@ def home():
         <ul style="margin-left: 20px; margin-top: 15px; color: #555;">
             <li>点击<strong>「选择座位并预订」</strong>进入选座页面。</li>
             <li>每个座位都需要单独选择，支持为多人同时预订。</li>
-            <li>已发车的班次会保留一周以供查看，但不能预订。</li>
-            <li>点击<strong>「查看预订详情」</strong>可查看该班次的所有预订信息。</li>
-            <li>如需创建/删除班次，请使用<strong>管理后台</strong>（需要密码）。</li>
+            <li>已发车的班次会保留一周以供查看。</li>
+            
         </ul>
     </div>
     '''
@@ -381,8 +380,7 @@ def home():
 
 @app.route('/book/<int:tour_id>')
 def book_page(tour_id):
-    """预订页面（客人子系统）- 新增选座功能"""
-    # 从文件加载最新数据
+    
     global tours_db
     app_data = load_data()
     tours_db = app_data['tours']
@@ -425,7 +423,7 @@ def book_page(tour_id):
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
                 <div>
                     <h3><i class="fas fa-edit"></i> 1. 选择座位</h3>
-                    <p style="color: #666; margin-bottom: 10px;">请点击下方选择座位（绿色可选，红色已订）：</p>
+                    <p style="color: #666; margin-bottom: 10px;">请点击下方选择座位：</p>
                     <div class="seat-map" id="seatMap">
                         {seat_html}
                     </div>
@@ -678,7 +676,7 @@ def admin_page():
     body_content = f'''
     <div style="max-width: 1200px; margin: 0 auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 style="color: white;"><i class="fas fa-cog"></i> 管理后台（管理员）</h1>
+            <h1 style="color: white;"><i class="fas fa-cog"></i> 管理后台</h1>
             <a href="/admin/logout" class="btn" style="background: #6c757d;"><i class="fas fa-sign-out-alt"></i> 退出登录</a>
         </div>
         <p style="color: rgba(255,255,255,0.8); margin-bottom: 30px;">所有数据总览与管理 | <a href="/" style="color: white;">返回首页</a></p>
@@ -761,8 +759,8 @@ def admin_page():
         </div>
         
         <div class="card">
-            <h2><i class="fas fa-list-alt"></i> 所有预订详情（仅管理员可见）</h2>
-            <p style="color: #666; margin-bottom: 15px;">这里显示所有客户的完整预订信息，客人页面看不到这些。</p>
+            <h2><i class="fas fa-list-alt"></i> 所有预订详情</h2>
+            <p style="color: #666; margin-bottom: 15px;">这里显示所有客户的完整预订信息</p>
             <div style="overflow-x: auto; margin-top: 20px;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
